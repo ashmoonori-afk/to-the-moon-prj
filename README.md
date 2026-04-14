@@ -23,9 +23,11 @@ Brand Keyword → Account Collection → Profile Extraction → Scoring → Revi
 ## Tech Stack
 
 - **Platform**: Chrome Extension (Manifest V3)
-- **Runtime**: Node.js (LTS)
-- **Data**: Instagram data extraction via browser-native methods
-- **Storage**: Local-first candidate storage with optional cloud sync
+- **Language**: TypeScript (strict mode)
+- **Build**: Webpack 5 + ts-loader
+- **Storage**: IndexedDB (via `storage/database.ts` wrapper)
+- **Data**: Instagram DOM extraction via content scripts
+- **i18n**: English / Korean (locale JSON + runtime toggle)
 
 ## Quick Start
 
@@ -41,7 +43,9 @@ Brand Keyword → Account Collection → Profile Extraction → Scoring → Revi
 git clone git@github.com:ashmoonori-afk/crispy-goggles.git
 cd crispy-goggles
 npm install
-npm run dev
+npm run build        # production build → dist/
+npm run dev          # development build with watch mode
+npm run typecheck    # TypeScript type checking (no emit)
 ```
 
 ### Load the Extension
@@ -50,6 +54,33 @@ npm run dev
 2. Enable **Developer mode**
 3. Click **Load unpacked**
 4. Select the `dist/` directory from the project
+
+## Source Structure
+
+```
+src/
+├── manifest.json          # MV3 manifest
+├── background/index.ts    # Service worker — message router, collection orchestration
+├── content/index.ts       # Instagram DOM extraction (profiles, posts, engagement)
+├── popup/
+│   ├── popup.html         # Extension popup markup
+│   ├── popup.css          # Popup styles
+│   └── index.ts           # Popup logic (filters, i18n, scoring weights, export)
+├── scoring/
+│   ├── index.ts           # Scoring entry point (weighted total)
+│   ├── authenticity.ts    # Engagement rate + follower ratio heuristics (0–100)
+│   ├── brand-fit.ts       # Bio + caption keyword relevance (0–100)
+│   └── ad-saturation.ts   # Sponsored post ratio (0.0–1.0)
+├── storage/database.ts    # IndexedDB wrapper (candidates, collections, settings)
+├── shared/
+│   ├── types.ts           # All interfaces, message types, constants
+│   ├── validation.ts      # Input sanitization at system boundaries
+│   └── i18n.ts            # Locale detection, string loading, translation
+├── _locales/
+│   ├── en.json            # English strings
+│   └── ko.json            # Korean strings
+└── icons/                 # Extension icons (16/48/128px)
+```
 
 ## Project Documentation
 
