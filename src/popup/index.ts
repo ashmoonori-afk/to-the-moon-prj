@@ -9,7 +9,6 @@ import type {
   CollectProgressPayload,
   ScoringWeights,
 } from "../shared/types";
-import { DEFAULT_SCORING_WEIGHTS } from "../shared/types";
 import { sanitizeKeyword } from "../shared/validation";
 import type { Locale, LocaleStrings } from "../shared/i18n";
 import { getLocale, loadStrings, t } from "../shared/i18n";
@@ -81,26 +80,31 @@ function renderCandidate(candidate: Candidate): string {
   const fit = scores?.brandFit ?? 0;
   const adSat = scores?.adSaturation ?? 0;
 
+  const authLbl = currentStrings ? t(currentStrings, "authLabel") : "Auth";
+  const fitLbl = currentStrings ? t(currentStrings, "fitLabel") : "Fit";
+  const adsLbl = currentStrings ? t(currentStrings, "adsLabel") : "Ads";
+  const followersLbl = currentStrings ? t(currentStrings, "followers") : "followers";
+
   return `
     <div class="candidate-card" data-id="${profile.id}">
       <div class="candidate-card__info">
         <div class="candidate-card__username">@${profile.username}</div>
         <div class="candidate-card__stats">
-          ${profile.followerCount.toLocaleString()} followers · ${review.status}
+          ${profile.followerCount.toLocaleString()} ${followersLbl} · ${review.status}
         </div>
       </div>
       <div class="candidate-card__scores">
         <div class="score-badge ${scoreClass(auth, 100)}">
           <span class="score-badge__value">${auth}</span>
-          <span>Auth</span>
+          <span>${authLbl}</span>
         </div>
         <div class="score-badge ${scoreClass(fit, 100)}">
           <span class="score-badge__value">${fit}</span>
-          <span>Fit</span>
+          <span>${fitLbl}</span>
         </div>
         <div class="score-badge ${scoreClass(1 - adSat, 1)}">
           <span class="score-badge__value">${Math.round(adSat * 100)}%</span>
-          <span>Ads</span>
+          <span>${adsLbl}</span>
         </div>
       </div>
     </div>
@@ -109,13 +113,19 @@ function renderCandidate(candidate: Candidate): string {
 
 function renderCandidateList(candidates: readonly Candidate[]): void {
   if (candidates.length === 0) {
-    candidateList.innerHTML = '<p class="empty-state">No candidates yet. Enter a keyword to start collecting.</p>';
+    const emptyMsg = currentStrings
+      ? t(currentStrings, "emptyState")
+      : "No candidates yet. Enter a keyword to start collecting.";
+    candidateList.innerHTML = `<p class="empty-state">${emptyMsg}</p>`;
     exportBtn.disabled = true;
   } else {
     candidateList.innerHTML = candidates.map(renderCandidate).join("");
     exportBtn.disabled = false;
   }
-  candidateCount.textContent = `${candidates.length} candidate${candidates.length !== 1 ? "s" : ""}`;
+  const countText = currentStrings
+    ? t(currentStrings, "candidateCount").replace("{count}", String(candidates.length))
+    : `${candidates.length} candidate${candidates.length !== 1 ? "s" : ""}`;
+  candidateCount.textContent = countText;
 }
 
 // --- Data Loading ---
@@ -135,6 +145,60 @@ async function loadCandidates(): Promise<void> {
   if (response.success && response.data) {
     renderCandidateList(response.data);
   }
+}
+
+// --- i18n ---
+
+function applyStrings(strings: LocaleStrings): void {
+  currentStrings = strings;
+
+  // Header
+  getElement<HTMLElement>("app").querySelector<HTMLElement>(".header__title")!.textContent = t(strings, "appTitle");
+  getElement<HTMLElement>("app").querySelector<HTMLElement>(".header__subtitle")!.textContent = t(strings, "appSubtitle");
+
+  // Search
+  keywordInput.placeholder = t(strings, "keywordPlaceholder");
+  collectBtn.textContent = t(strings, "collectBtn");
+
+  // Filters
+  const statusOptions = statusFilter.options;
+  statusOptions[0].textContent = t(strings, "allStatuses");
+  statusOptions[1].textContent = t(strings, "pending");
+  statusOptions[2].textContent = t(strings, "shortlisted");
+  statusOptions[3].textContent = t(strings, "excluded");
+  statusOptions[4].textContent = t(strings, "archived");
+
+  const sortOptions = sortFilter.options;
+  sortOptions[0].textContent = t(strings, "sortRecent");
+  sortOptions[1].textContent = t(strings, "sortAuthenticity");
+  sortOptions[2].textContent = t(strings, "sortBrandFit");
+  sortOptions[3].textContent = t(strings, "sortFollowers");
+  sortOptions[4].textContent = t(strings, "sortAdSaturation");
+
+  // Footer
+  exportBtn.textContent = t(strings, "exportBtn");
+
+  // Settings
+  settingsTitle.textContent = t(strings, "settingsTitle");
+  langLabel.textContent = t(strings, "languageLabel");
+  weightsTitle.textContent = t(strings, "weightsTitle");
+  authWeightLabel.textContent = t(strings, "authenticityWeight");
+  fitWeightLabel.textContent = t(strings, "brandFitWeight");
+  adsatWeightLabel.textContent = t(strings, "adSaturationWeight");
+  saveWeightsBtn.textContent = t(strings, "saveWeights");
+
+  // Refresh candidate list to update labels
+  loadCandidates();
+}
+
+async function switchLocale(locale: Locale): Promise<void> {
+  const strings = await loadStrings(locale);
+  langToggle.textContent = locale.toUpperCase();
+  langSelect.value = locale;
+  applyStrings(strings);
+
+  // Persist preference
+  chrome.storage.local.set({ locale });
 }
 
 // --- Event Handlers ---
@@ -183,6 +247,49 @@ exportBtn.addEventListener("click", async () => {
   }
 });
 
+// Language toggle (quick switch)
+langToggle.addEventListener("click", () => {
+  const next: Locale = langSelect.value === "en" ? "ko" : "en";
+  switchLocale(next);
+});
+
+// Language select
+langSelect.addEventListener("change", () => {
+  switchLocale(langSelect.value as Locale);
+});
+
+// Settings toggle
+settingsToggle.addEventListener("click", () => {
+  settingsSection.hidden = !settingsSection.hidden;
+});
+
+// Weight sliders - update display values
+authWeight.addEventListener("input", () => {
+  authWeightValue.textContent = authWeight.value;
+});
+fitWeight.addEventListener("input", () => {
+  fitWeightValue.textContent = fitWeight.value;
+});
+adsatWeight.addEventListener("input", () => {
+  adsatWeightValue.textContent = adsatWeight.value;
+});
+
+// Save weights
+saveWeightsBtn.addEventListener("click", async () => {
+  const weights: ScoringWeights = {
+    authenticityWeight: parseInt(authWeight.value, 10),
+    brandFitWeight: parseInt(fitWeight.value, 10),
+    adSaturationWeight: parseInt(adsatWeight.value, 10),
+  };
+
+  await sendMessage(MessageType.SCORING_WEIGHTS_SET, { weights });
+
+  weightsSavedMsg.hidden = false;
+  setTimeout(() => {
+    weightsSavedMsg.hidden = true;
+  }, 2000);
+});
+
 // --- Progress Updates ---
 
 chrome.runtime.onMessage.addListener((message: Message) => {
@@ -202,4 +309,22 @@ chrome.runtime.onMessage.addListener((message: Message) => {
 
 // --- Init ---
 
-document.addEventListener("DOMContentLoaded", loadCandidates);
+document.addEventListener("DOMContentLoaded", async () => {
+  // Load locale
+  const stored = await chrome.storage.local.get("locale");
+  const locale: Locale = (stored.locale === "ko" ? "ko" : null) ?? getLocale();
+  await switchLocale(locale);
+
+  // Load scoring weights
+  const weightsResponse = await sendMessage<ScoringWeights>(MessageType.SCORING_WEIGHTS_GET, {});
+  if (weightsResponse.success && weightsResponse.data) {
+    authWeight.value = String(weightsResponse.data.authenticityWeight);
+    fitWeight.value = String(weightsResponse.data.brandFitWeight);
+    adsatWeight.value = String(weightsResponse.data.adSaturationWeight);
+    authWeightValue.textContent = String(weightsResponse.data.authenticityWeight);
+    fitWeightValue.textContent = String(weightsResponse.data.brandFitWeight);
+    adsatWeightValue.textContent = String(weightsResponse.data.adSaturationWeight);
+  }
+
+  await loadCandidates();
+});
