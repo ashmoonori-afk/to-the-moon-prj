@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Influencer Michelin</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1 class="header__title">Influencer Michelin</h1>
+      <p class="header__subtitle">Creator discovery & scoring</p>
+      <button id="lang-toggle" class="btn btn--lang" title="한국어/English">EN</button>
+    </header>
+
+    <section id="search-section" class="section">
+      <div class="search-bar">
+        <input
+          id="keyword-input"
+          type="text"
+          placeholder="Enter brand keyword..."
+          maxlength="100"
+          class="input"
+        >
+        <button id="collect-btn" class="btn btn--primary">Collect</button>
+      </div>
+      <div id="progress-bar" class="progress" hidden>
+        <div class="progress__fill" id="progress-fill"></div>
+        <span class="progress__text" id="progress-text">0 / 0</span>
+      </div>
+    </section>
+
+    <section id="filters-section" class="section">
+      <div class="filters">
+        <select id="status-filter" class="select">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="shortlisted">Shortlisted</option>
+          <option value="excluded">Excluded</option>
+          <option value="archived">Archived</option>
+        </select>
+        <select id="sort-filter" class="select">
+          <option value="collectedAt">Recent</option>
+          <option value="authenticity">Authenticity</option>
+          <option value="brandFit">Brand Fit</option>
+          <option value="followerCount">Followers</option>
+          <option value="adSaturation">Ad Saturation</option>
+        </select>
+      </div>
+    </section>
+
+    <section id="candidates-section" class="section">
+      <div id="candidate-list" class="candidate-list">
+        <p class="empty-state">No candidates yet. Enter a keyword to start collecting.</p>
+      </div>
+    </section>
+
+    <section id="settings-section" class="section section--settings" hidden>
+      <h3 id="settings-title" class="section__title">Settings</h3>
+
+      <div class="setting-row">
+        <label id="lang-label" class="setting-row__label">Language</label>
+        <select id="lang-select" class="select">
+          <option value="en">English</option>
+          <option value="ko">한국어</option>
+        </select>
+      </div>
+
+      <h4 id="weights-title" class="section__subtitle">Scoring Weights</h4>
+
+      <div class="setting-row">
+        <label id="auth-weight-label" class="setting-row__label">Authenticity Weight</label>
+        <input id="auth-weight" type="range" min="0" max="100" value="40" class="range-input">
+        <span id="auth-weight-value" class="range-value">40</span>
+      </div>
+
+      <div class="setting-row">
+        <label id="fit-weight-label" class="setting-row__label">Brand Fit Weight</label>
+        <input id="fit-weight" type="range" min="0" max="100" value="40" class="range-input">
+        <span id="fit-weight-value" class="range-value">40</span>
+      </div>
+
+      <div class="setting-row">
+        <label id="adsat-weight-label" class="setting-row__label">Ad Saturation Weight</label>
+        <input id="adsat-weight" type="range" min="0" max="100" value="20" class="range-input">
+        <span id="adsat-weight-value" class="range-value">20</span>
+      </div>
+
+      <button id="save-weights-btn" class="btn btn--primary btn--sm">Save Weights</button>
+      <span id="weights-saved-msg" class="success-msg" hidden>Weights saved!</span>
+    </section>
+
+    <footer class="footer">
+      <button id="settings-toggle" class="btn btn--icon" title="Settings">⚙</button>
+      <button id="export-btn" class="btn btn--secondary" disabled>Export Shortlist</button>
+      <span id="candidate-count" class="footer__count">0 candidates</span>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

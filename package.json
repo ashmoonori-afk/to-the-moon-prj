@@ -1,0 +1,24 @@
+{
+  "name": "influencer-michelin",
+  "version": "0.1.0",
+  "description": "Chrome extension that turns brand keywords into scored, verified influencer shortlists.",
+  "private": true,
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "To the Moon",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/chrome": "^0.1.40",
+    "copy-webpack-plugin": "^14.0.0",
+    "ts-loader": "^9.5.7",
+    "typescript": "^6.0.2",
+    "webpack": "^5.106.1",
+    "webpack-cli": "^7.0.2"
+  }
+}
